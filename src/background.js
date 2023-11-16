@@ -92,18 +92,6 @@ async function OnUpdateReceived(payload) {
     current_video = payload.current_video;
   }
 
-  let delta = Date.now() - payload.updated_at;
-  let delta_time = payload.current_time + delta / 1000;
-
-  if (payload.is_paused) {
-    delta_time = payload.current_time;
-  }
-
-  if (current_time === undefined || Math.abs(delta_time - current_time) > 1) {
-    chrome.tabs.sendMessage(tab.id, { action: "seek", time: delta_time });
-    current_time = delta_time;
-  }
-
   if (is_paused === undefined || payload.is_paused !== is_paused) {
     if (payload.is_paused) {
       chrome.tabs.sendMessage(tab.id, { action: "pause" });
@@ -112,6 +100,14 @@ async function OnUpdateReceived(payload) {
       chrome.tabs.sendMessage(tab.id, { action: "play" });
       is_paused = false;
     }
+  }
+
+  let delta = Date.now() - payload.updated_at;
+  let delta_time = payload.current_time + delta / 1000;
+
+  if (current_time === undefined || Math.abs(delta_time - current_time) > 1) {
+    chrome.tabs.sendMessage(tab.id, { action: "seek", time: delta_time });
+    current_time = delta_time;
   }
 }
 

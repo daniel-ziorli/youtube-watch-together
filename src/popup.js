@@ -25,9 +25,9 @@ function leave() {
   document.getElementById("joinCreate").classList.remove("hidden");
 }
 
-function copy() {
-  navigator.clipboard.writeText(document.getElementById("sessionId").innerHTML);
-  alert("Session ID copied to clipboard");
+async function copy() {
+  const text = document.getElementById("sessionId").innerHTML
+  await navigator.clipboard.writeText(text);
 }
 
 document.addEventListener("DOMContentLoaded", function () {

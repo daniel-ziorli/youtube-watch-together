@@ -45,11 +45,6 @@ function OnVideoChange() {
     }, 3000);
     return;
   }
-  video = document.querySelector("video");
-  if (!video) {
-    return;
-  }
-  AddListeners();
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -84,20 +79,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   }
 });
 
-function SendBuffer() {
-  let body = {};
-
-  if (buffer.length !== 0) {
-    body.is_paused = buffer[buffer.length - 1];
-  }
-  body.current_time = video.currentTime;
-
-  console.log(body);
-
-  chrome.runtime.sendMessage({ action: "update", packet: body })
-  buffer.length = 0;
-}
-
 function AddListeners() {
   if (!video) {
     return;
@@ -114,27 +95,26 @@ function AddListeners() {
 
   video.addEventListener("play", (event) => {
     console.log("Play");
-    if (buffer.length === 0) {
-      setTimeout(() => {
-        SendBuffer();
-      }, buffer_time);
-    }
-    buffer.push(false);
+    chrome.runtime.sendMessage({
+      action: "update",
+      packet: {
+        current_time: video.currentTime,
+        is_paused: false
+      }
+    })
   });
 
   video.addEventListener("pause", (event) => {
     console.log("Pause");
-    if (buffer.length === 0) {
-      setTimeout(() => {
-        SendBuffer();
-      }, buffer_time);
-    }
-    buffer.push(true);
+    chrome.runtime.sendMessage({
+      action: "update",
+      packet: {
+        current_time: video.currentTime,
+        is_paused: true
+      }
+    })
   });
 }
-
-const buffer = [];
-const buffer_time = 300;
 
 if (!isYoutube()) {
   return;
@@ -142,8 +122,10 @@ if (!isYoutube()) {
 
 video = document.querySelector("video");
 
-if (!video) {
-  return;
+while (!video) {
+  setTimeout(() => {
+    video = document.querySelector("video");
+  }, 1000);
 }
 
 AddListeners();
