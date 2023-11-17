@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Yt Wt",
+  "name": "Youtube Watch Together",
   "version": "0.1.0",
   "description": "My Chrome Extension",
   "icons": {
@@ -13,7 +13,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Yt Wt",
+    "default_title": "Youtube Watch Together",
     "default_popup": "popup.html"
   },
   "permissions": [
@@ -24,7 +24,7 @@
   "content_scripts": [
     {
       "matches": [
-        "<all_urls>"
+        "*://*.youtube.com/*"
       ],
       "run_at": "document_idle",
       "js": [

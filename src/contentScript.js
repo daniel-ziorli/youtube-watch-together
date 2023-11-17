@@ -1,12 +1,11 @@
 function isYoutube() {
   const url = window.location.href;
-  return url.includes("youtube.com");
+  return url.includes("youtube.com/watch?v=");
 }
 
 function seekToTime(time) {
   const videoElement = document.querySelector('video');
   if (!videoElement) {
-    alert('No YouTube video element found on the page.');
     return;
   }
 
@@ -16,7 +15,6 @@ function seekToTime(time) {
 function play() {
   const videoElement = document.querySelector('video');
   if (!videoElement) {
-    alert('No YouTube video element found on the page.');
     return;
   }
 
@@ -26,7 +24,6 @@ function play() {
 function pause() {
   const videoElement = document.querySelector('video');
   if (!videoElement) {
-    alert('No YouTube video element found on the page.');
     return;
   }
 
@@ -34,17 +31,23 @@ function pause() {
 }
 
 function OnVideoChange() {
-  if (video) {
-    setTimeout(async () => {
-      chrome.runtime.sendMessage({
-        action: "update", packet: {
-          current_time: video.currentTime,
-          is_paused: video.paused
-        }
-      });
-    }, 3000);
+  if (!video) {
+    video = document.querySelector('video');
+    AddListeners();
+  }
+
+  if (!video) {
     return;
   }
+
+  setTimeout(async () => {
+    chrome.runtime.sendMessage({
+      action: "update", packet: {
+        current_time: video.currentTime,
+        is_paused: video.paused
+      }
+    });
+  }, 3000);
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -57,15 +60,13 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   } else if (request.action === "video-change") {
     OnVideoChange();
   } else if (request.action === "title-change") {
-    if (document.title.includes("[YTWT]")) {
+    if (document.title.includes("[YTWT] ")) {
       return;
     }
     document.title = "[YTWT] " + request.title
   } else if (request.action === "get-state") {
-    if (!video) {
-      video = document.querySelector("video");
-    }
-    if (!video) {
+    const videoElement = document.querySelector('video');
+    if (!videoElement) {
       sendResponse({
         current_time: 0,
         is_paused: true
@@ -73,19 +74,35 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       return;
     }
     sendResponse({
-      current_time: video.currentTime,
-      is_paused: video.paused,
+      current_time: videoElement.currentTime,
+      is_paused: videoElement.paused,
     })
+  } else if (request.action === "session-left") {
+    if (!document.title.includes("[YTWT] ")) {
+      return;
+    }
+    document.title = document.title.replace("[YTWT] ", "");
   }
 });
-
-function AddListeners() {
+let video;
+let buffer = [];
+let buffer_time = 300;
+function SendBuffer() {
+  chrome.runtime.sendMessage({
+    action: "update",
+    packet: {
+      current_time: video.currentTime,
+      is_paused: buffer[buffer.length - 1],
+    }
+  });
+  buffer = [];
+}
+function Start() {
+  video = document.querySelector('video');
   if (!video) {
     return;
   }
   video.addEventListener("seeked", (event) => {
-    console.log("Seeked");
-
     chrome.runtime.sendMessage({
       action: "update", packet: {
         current_time: video.currentTime,
@@ -94,38 +111,22 @@ function AddListeners() {
   });
 
   video.addEventListener("play", (event) => {
-    console.log("Play");
-    chrome.runtime.sendMessage({
-      action: "update",
-      packet: {
-        current_time: video.currentTime,
-        is_paused: false
-      }
-    })
+    if (buffer.length === 0) {
+      setTimeout(() => {
+        SendBuffer();
+      }, buffer_time);
+    }
+    buffer.push(false);
   });
 
   video.addEventListener("pause", (event) => {
-    console.log("Pause");
-    chrome.runtime.sendMessage({
-      action: "update",
-      packet: {
-        current_time: video.currentTime,
-        is_paused: true
-      }
-    })
+    if (buffer.length === 0) {
+      setTimeout(() => {
+        SendBuffer();
+      }, buffer_time);
+    }
+    buffer.push(true);
   });
 }
 
-if (!isYoutube()) {
-  return;
-}
-
-video = document.querySelector("video");
-
-while (!video) {
-  setTimeout(() => {
-    video = document.querySelector("video");
-  }, 1000);
-}
-
-AddListeners();
+Start();

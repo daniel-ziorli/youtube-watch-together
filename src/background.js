@@ -13,12 +13,15 @@ let global_tab = undefined;
 
 let updated_at = undefined;
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 async function GetTab() {
   if (global_tab !== undefined) {
     return global_tab;
   }
-  global_tab = await chrome.tabs.create({ url: "https://www.youtube.com" });
+  global_tab = await chrome.tabs.create({ url: "https://www.youtube.com/watch?v=qeATgEWCB0Y" });
   return global_tab;
 }
 
@@ -65,12 +68,8 @@ async function JoinSession() {
   console.log("Joined session");
   console.log(session);
 
-  let url = 'https://www.youtube.com';
-  if (session[0].current_video !== null) {
-    url = 'https://www.youtube.com/watch?v=' + session[0].current_video;
-  }
-
   chrome.runtime.sendMessage({ "action": "session-joined", uuid: session_uuid });
+  chrome.storage.sync.set({ "session_id": session_uuid });
   OnUpdateReceived(session[0]);
 }
 
@@ -82,14 +81,10 @@ async function OnUpdateReceived(payload) {
   updated_at = payload.updated_at;
   const tab = await GetTab();
 
-  let url = 'https://www.youtube.com';
-  if (payload.current_video !== null) {
-    url = 'https://www.youtube.com/watch?v=' + payload.current_video;
-  }
-
-  if (payload.current_video !== current_video) {
-    await chrome.tabs.update(tab.id, { url });
+  if (payload.current_video !== null && payload.current_video !== current_video) {
+    await chrome.tabs.update(tab.id, { url: 'https://www.youtube.com/watch?v=' + payload.current_video });
     current_video = payload.current_video;
+    await sleep(3000);
   }
 
   if (is_paused === undefined || payload.is_paused !== is_paused) {
@@ -115,13 +110,15 @@ async function LeaveSession() {
   if (!session_uuid) {
     return;
   }
+  chrome.tabs.sendMessage(global_tab.id, { action: "session-left" });
+  chrome.runtime.sendMessage({ "action": "session-left" });
+
   session_uuid = undefined;
   current_video = undefined;
   current_time = undefined;
   is_paused = undefined;
   global_tab = undefined;
   subscription.unsubscribe();
-  chrome.runtime.sendMessage({ "action": "session-left" });
 }
 
 async function PushUpdate(update) {

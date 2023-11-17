@@ -11,7 +11,6 @@ function join() {
     return;
   }
   chrome.runtime.sendMessage({ "action": "join", id });
-  alert("Joining session: " + id);
 }
 
 function create() {
@@ -51,6 +50,11 @@ async function Start() {
     document.getElementById("sessionId").innerHTML = response.uuid;
     document.getElementById("joinCreate").classList.add("hidden");
     document.getElementById("session").classList.remove("hidden");
+  } else {
+    const result = await chrome.storage.sync.get(["session_id"]);
+    if (result.session_id) {
+      document.getElementById("joinInput").value = result.session_id;
+    }
   }
 }
 
