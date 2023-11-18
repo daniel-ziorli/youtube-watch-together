@@ -10,7 +10,6 @@ let current_time = undefined;
 let current_video = undefined;
 let is_paused = undefined;
 let global_tab = undefined;
-
 let updated_at = undefined;
 
 function sleep(ms) {
@@ -68,7 +67,6 @@ async function JoinSession() {
   console.log("Joined session");
   console.log(session);
 
-  chrome.runtime.sendMessage({ "action": "session-joined", uuid: session_uuid });
   chrome.storage.sync.set({ "session_id": session_uuid });
   OnUpdateReceived(session[0]);
 }
@@ -107,7 +105,7 @@ async function OnUpdateReceived(payload) {
 }
 
 async function LeaveSession() {
-  if (!session_uuid) {
+  if (!session_uuid || !global_tab) {
     return;
   }
   chrome.tabs.sendMessage(global_tab.id, { action: "session-left" });
@@ -118,6 +116,7 @@ async function LeaveSession() {
   current_time = undefined;
   is_paused = undefined;
   global_tab = undefined;
+  updated_at = undefined;
   subscription.unsubscribe();
 }
 

@@ -1,9 +1,3 @@
-function seek() {
-  chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
-    chrome.tabs.sendMessage(tabs[0].id, { "action": "seek", "time": document.getElementById("timeInput").value });
-  });
-}
-
 function join() {
   let id = document.getElementById("joinInput").value
   if (id.length < 36) {
@@ -19,14 +13,21 @@ function create() {
 
 function leave() {
   chrome.runtime.sendMessage({ "action": "leave" });
-  document.getElementById("sessionId").innerHTML = "";
   document.getElementById("session").classList.add("hidden");
   document.getElementById("joinCreate").classList.remove("hidden");
+  AddStoredSessionId();
 }
 
 async function copy() {
   const text = document.getElementById("sessionId").innerHTML
   await navigator.clipboard.writeText(text);
+}
+
+async function AddStoredSessionId() {
+  const result = await chrome.storage.sync.get(["session_id"]);
+  if (result.session_id) {
+    document.getElementById("joinInput").value = result.session_id;
+  }
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -36,14 +37,6 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("copy").addEventListener("click", copy);
 });
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.action === "session-joined") {
-    document.getElementById("sessionId").innerHTML = request.uuid;
-    document.getElementById("joinCreate").classList.add("hidden");
-    document.getElementById("session").classList.remove("hidden");
-  }
-});
-
 async function Start() {
   const response = await chrome.runtime.sendMessage({ "action": "get-session" });
   if (response.uuid) {
@@ -51,10 +44,7 @@ async function Start() {
     document.getElementById("joinCreate").classList.add("hidden");
     document.getElementById("session").classList.remove("hidden");
   } else {
-    const result = await chrome.storage.sync.get(["session_id"]);
-    if (result.session_id) {
-      document.getElementById("joinInput").value = result.session_id;
-    }
+    AddStoredSessionId();
   }
 }
 
