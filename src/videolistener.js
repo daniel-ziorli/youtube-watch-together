@@ -64,3 +64,5 @@ const ObserveUrlChange = () => {
 };
 
 window.onload = ObserveUrlChange;
+
+console.log('test');
