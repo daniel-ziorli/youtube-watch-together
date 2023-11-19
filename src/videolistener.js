@@ -27,6 +27,7 @@ function OnVideoEvent(event) {
       "action": "video-state",
       "state": {
         "current_time": event.srcElement.currentTime,
+        "is_paused": event.srcElement.paused
       }
     });
   }

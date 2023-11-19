@@ -7,15 +7,12 @@ function OnSessionUpdate(session) {
     deltaTime = session.current_time;
   }
 
-  if (Math.abs(deltaTime - videoElement.currentTime) > 1) {
-    videoElement.currentTime = deltaTime;
-  }
+  videoElement.currentTime = deltaTime;
 
   if (session.is_paused !== videoElement.paused) {
     if (session.is_paused) {
       videoElement.pause();
     } else {
-      videoElement.currentTime = deltaTime;
       videoElement.play();
     }
   }
