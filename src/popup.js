@@ -4,7 +4,7 @@ function join() {
     alert("Please enter a valid session ID");
     return;
   }
-  chrome.runtime.sendMessage({ "action": "join", id });
+  chrome.runtime.sendMessage({ "action": "join", sessionId: id });
 }
 
 function create() {
@@ -24,9 +24,9 @@ async function copy() {
 }
 
 async function AddStoredSessionId() {
-  const result = await chrome.storage.sync.get(["session_id"]);
-  if (result.session_id) {
-    document.getElementById("joinInput").value = result.session_id;
+  const result = await chrome.storage.sync.get(["sessionId"]);
+  if (result.sessionId) {
+    document.getElementById("joinInput").value = result.sessionId;
   }
 }
 
@@ -39,8 +39,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 async function Start() {
   const response = await chrome.runtime.sendMessage({ "action": "get-session" });
-  if (response.uuid) {
-    document.getElementById("sessionId").innerHTML = response.uuid;
+  if (response.sessionId) {
+    document.getElementById("sessionId").innerHTML = response.sessionId;
     document.getElementById("joinCreate").classList.add("hidden");
     document.getElementById("session").classList.remove("hidden");
   } else {

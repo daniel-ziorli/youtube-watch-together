@@ -26,9 +26,10 @@
       "matches": [
         "*://*.youtube.com/watch?v=*"
       ],
-      "run_at": "document_idle",
+      "run_at": "document_end",
       "js": [
-        "contentScript.js"
+        "videocontroller.js",
+        "videolistener.js"
       ]
     }
   ]

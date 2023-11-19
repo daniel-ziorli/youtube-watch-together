@@ -10,7 +10,8 @@ const config = (env, argv) =>
   merge(common, {
     entry: {
       popup: PATHS.src + '/popup.js',
-      contentScript: PATHS.src + '/contentScript.js',
+      videocontroller: PATHS.src + '/videocontroller.js',
+      videolistener: PATHS.src + '/videolistener.js',
       background: PATHS.src + '/background.js',
     },
     devtool: argv.mode === 'production' ? false : 'source-map',
