@@ -41,11 +41,11 @@ async function JoinSession(id) {
   sessionId = id;
   chrome.storage.sync.set({ "sessionId": sessionId });
 
-  await supabase.channel('session-update-channel')
+  supabase.channel('session-update-channel')
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'session', filter: 'uuid=eq.' + sessionId },
-      (payload) => OnSessionUpdate(payload.new)
+      (payload) => OnStateUpdate(payload.new)
     )
     .subscribe();
 
@@ -53,6 +53,7 @@ async function JoinSession(id) {
     .from('session')
     .select()
     .eq('uuid', sessionId)
+    .single()
 
   if (error) {
     console.log(error);
@@ -60,7 +61,7 @@ async function JoinSession(id) {
   }
 
   await CreateTab();
-  OnSessionUpdate(session[0]);
+  OnStateUpdate(session);
 }
 
 function LeaveSession() {
@@ -80,6 +81,8 @@ async function OnNewVideoState(state) {
     return;
   }
 
+  console.log("OnNewVideoState:" + JSON.stringify(state));
+
   lastUpdateAt = Date.now();
   state.updated_at = lastUpdateAt;
 
@@ -97,25 +100,24 @@ async function OnNewVideoState(state) {
 }
 
 let currentVideo = undefined;
-async function OnSessionUpdate(session) {
-  if (!sessionId || !globalTab || session.updated_at <= lastUpdateAt) {
+async function OnStateUpdate(state) {
+  if (!sessionId || !globalTab || state.updated_at <= lastUpdateAt) {
     return;
   }
 
-  console.log(session);
+  console.log("OnStateUpdate:" + JSON.stringify(state));
 
-  lastUpdateAt = session.updated_at;
+  lastUpdateAt = state.updated_at;
 
-  if (session.current_video !== null && currentVideo !== session.current_video) {
-    currentVideo = session.current_video;
-    await chrome.tabs.update(globalTab.id, { url: session.current_video });
+  if (state.current_video !== null && currentVideo !== state.current_video) {
+    currentVideo = state.current_video;
+    await chrome.tabs.update(globalTab.id, { url: state.current_video });
   }
 
-  chrome.tabs.sendMessage(globalTab.id, { action: "session-update", session });
+  chrome.tabs.sendMessage(globalTab.id, { action: "state-update", state });
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  console.log(request);
   if (request.action === "create") {
     CreateSession();
   }
