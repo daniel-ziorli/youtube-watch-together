@@ -16,7 +16,6 @@ function leave() {
   chrome.runtime.sendMessage({ "action": "leave" });
   document.getElementById("session").classList.add("hidden");
   document.getElementById("joinCreate").classList.remove("hidden");
-  AddStoredSessionId();
 }
 
 async function copy() {
