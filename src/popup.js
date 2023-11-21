@@ -7,7 +7,8 @@ function join() {
   chrome.runtime.sendMessage({ "action": "join", sessionId: id });
 }
 
-function create() {
+function create(e) {
+  e.preventDefault();
   chrome.runtime.sendMessage({ "action": "create" });
 }
 
@@ -23,13 +24,6 @@ async function copy() {
   await navigator.clipboard.writeText(text);
 }
 
-async function AddStoredSessionId() {
-  const result = await chrome.storage.sync.get(["sessionId"]);
-  if (result.sessionId) {
-    document.getElementById("joinInput").value = result.sessionId;
-  }
-}
-
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("join").addEventListener("click", join);
   document.getElementById("create").addEventListener("click", create);
@@ -43,8 +37,6 @@ async function Start() {
     document.getElementById("sessionId").innerHTML = response.sessionId;
     document.getElementById("joinCreate").classList.add("hidden");
     document.getElementById("session").classList.remove("hidden");
-  } else {
-    AddStoredSessionId();
   }
 }
 

@@ -39,8 +39,6 @@ async function JoinSession(id) {
   console.log("Joining session");
 
   sessionId = id;
-  chrome.storage.sync.set({ "sessionId": sessionId });
-
   await CreateTab();
 
   channel = supabase.channel(sessionId);
@@ -75,7 +73,7 @@ function LeaveSession() {
   globalTab = undefined;
   channel = undefined;
   lastUpdateAt = 0;
-  currentVideo = undefined;
+  currentVideoId = undefined;
 }
 
 async function OnNewVideoState(state) {
@@ -97,7 +95,7 @@ async function OnNewVideoState(state) {
   )
 }
 
-let currentVideo = undefined;
+let currentVideoId = undefined;
 async function OnStateUpdate(state) {
   if (!sessionId || !globalTab || state.updated_at <= lastUpdateAt) {
     return;
@@ -107,8 +105,8 @@ async function OnStateUpdate(state) {
 
   lastUpdateAt = state.updated_at;
 
-  if (state.current_video !== null && currentVideo !== state.current_video) {
-    currentVideo = state.current_video;
+  if (state.current_video !== null && currentVideoId !== state.current_video) {
+    currentVideoId = state.current_video;
     await chrome.tabs.update(globalTab.id, { url: state.current_video });
   }
 
@@ -129,6 +127,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     sendResponse({ sessionId });
   }
   if (request.action === "video-state") {
+    if (sender.tab.id !== globalTab.id) {
+      return;
+    }
     OnNewVideoState(request.state);
   }
 });
@@ -139,5 +140,34 @@ chrome.tabs.onRemoved.addListener(function (tabid, removed) {
   }
   if (globalTab.id === tabid) {
     LeaveSession();
+  }
+});
+
+chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, currentTab) {
+  if (!sessionId || !globalTab || globalTab.id !== tabId) {
+    return;
+  }
+
+  if (changeInfo.url) {
+    let videoId = undefined;
+    if (changeInfo.url.includes('youtube.com/watch?v=')) {
+      videoId = changeInfo.url.split("v=")[1].split("&")[0]
+    }
+
+    if (videoId === undefined || videoId === currentVideoId) {
+      return;
+    }
+
+    currentVideoId = videoId;
+
+    channel.send({
+      type: 'broadcast',
+      event: 'state-update',
+      payload: {
+        current_video: changeInfo.url,
+        current_time: 0,
+        is_paused: true
+      }
+    })
   }
 });
