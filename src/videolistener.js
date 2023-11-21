@@ -49,11 +49,9 @@ function OnUrlChange(url) {
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   if (message.action === "get-state") {
     sendResponse({
-      "state": {
-        "current_video": document.location.href,
-        "current_time": document.querySelector("video").currentTime,
-        "is_paused": document.querySelector("video").paused
-      }
+      "current_video": document.location.href,
+      "current_time": document.querySelector("video").currentTime,
+      "is_paused": document.querySelector("video").paused
     });
   }
 });

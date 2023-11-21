@@ -7,6 +7,19 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 let sessionId = undefined;
 let globalTab = undefined;
 let lastUpdateAt = 0;
+let channel = undefined;
+
+function GenerateId(length) {
+  let result = '';
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const charactersLength = characters.length;
+  let counter = 0;
+  while (counter < length) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    counter += 1;
+  }
+  return result;
+}
 
 async function CreateTab() {
   globalTab = await chrome.tabs.create({ url: "https://www.youtube.com/watch?v=qeATgEWCB0Y" });
@@ -19,20 +32,7 @@ async function CreateSession() {
   }
   console.log("Creating session");
 
-  const { data, error } = await supabase
-    .from('session')
-    .insert({
-      current_time: 0,
-      is_paused: true,
-    })
-    .select()
-
-  if (error) {
-    console.log(error);
-    return;
-  }
-
-  JoinSession(data[0].uuid);
+  JoinSession(GenerateId(32));
 }
 
 async function JoinSession(id) {
@@ -41,27 +41,28 @@ async function JoinSession(id) {
   sessionId = id;
   chrome.storage.sync.set({ "sessionId": sessionId });
 
-  supabase.channel('session-update-channel')
-    .on(
-      'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'session', filter: 'uuid=eq.' + sessionId },
-      (payload) => OnStateUpdate(payload.new)
-    )
+  await CreateTab();
+
+  channel = supabase.channel(sessionId);
+
+  channel
+    .on('broadcast', { event: 'state-update' }, (e) => {
+      console.log("Broadcast:" + JSON.stringify(e));
+      OnStateUpdate(e.payload);
+    })
+    .on('broadcast', { event: 'request-state' }, () => {
+      console.log("Request state");
+      const state = chrome.tabs.sendMessage(globalTab.id, {
+        "action": "get-state"
+      });
+      OnNewVideoState(state);
+    })
     .subscribe();
 
-  const { data: session, error } = await supabase
-    .from('session')
-    .select()
-    .eq('uuid', sessionId)
-    .single()
-
-  if (error) {
-    console.log(error);
-    return;
-  }
-
-  await CreateTab();
-  OnStateUpdate(session);
+  channel.send({
+    type: 'broadcast',
+    event: 'request-state',
+  })
 }
 
 function LeaveSession() {
@@ -72,6 +73,7 @@ function LeaveSession() {
   supabase.removeAllChannels()
   sessionId = undefined;
   globalTab = undefined;
+  channel = undefined;
   lastUpdateAt = 0;
   currentVideo = undefined;
 }
@@ -86,17 +88,13 @@ async function OnNewVideoState(state) {
   lastUpdateAt = Date.now();
   state.updated_at = lastUpdateAt;
 
-  const { data, error } = await supabase
-    .from('session')
-    .update(state)
-    .eq('uuid', sessionId)
-    .select()
-
-  if (error) {
-    console.error(error);
-  }
-
-  console.log(data);
+  channel.send(
+    {
+      type: 'broadcast',
+      event: 'state-update',
+      payload: state
+    }
+  )
 }
 
 let currentVideo = undefined;

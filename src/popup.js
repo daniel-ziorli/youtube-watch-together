@@ -1,6 +1,6 @@
 function join() {
   let id = document.getElementById("joinInput").value
-  if (id.length !== 36) {
+  if (id.length !== 32) {
     alert("Please enter a valid session ID");
     return;
   }
