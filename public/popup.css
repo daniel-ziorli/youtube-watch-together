@@ -41,14 +41,13 @@ button {
 button:hover {
     cursor: pointer;
     background-color: #8d50ed;
-
 }
 
 .hidden {
     display: none;
 }
 
-input {
+input[type="text"] {
     border-radius: 4px;
     margin: 0;
     padding: 0;
@@ -73,5 +72,30 @@ input:focus {
 }
 
 .copyButton:hover {
+    cursor: pointer;
+}
+
+span {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    font-size: 100%;
+    vertical-align: baseline;
+    background: transparent;
+    line-height: 1;
+}
+
+input[type="checkbox"] {
+    border-radius: 4px;
+    margin-right: 10px;
+    padding: 0;
+    height: 18px;
+    width: 18px;
+    accent-color: #fff;
+    border: none;
+}
+
+input[type="checkbox"]:hover {
     cursor: pointer;
 }

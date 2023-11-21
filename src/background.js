@@ -9,30 +9,18 @@ let globalTab = undefined;
 let lastUpdateAt = 0;
 let channel = undefined;
 
-function GenerateId(length) {
-  let result = '';
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  const charactersLength = characters.length;
-  let counter = 0;
-  while (counter < length) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    counter += 1;
-  }
-  return result;
-}
-
 async function CreateTab() {
   globalTab = await chrome.tabs.create({ url: "https://www.youtube.com/watch?v=qeATgEWCB0Y" });
   return globalTab;
 }
 
-async function CreateSession() {
+async function CreateSession(id) {
   if (sessionId) {
     return;
   }
   console.log("Creating session");
 
-  JoinSession(GenerateId(32));
+  JoinSession(id);
 }
 
 async function JoinSession(id) {
@@ -115,7 +103,7 @@ async function OnStateUpdate(state) {
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "create") {
-    CreateSession();
+    CreateSession(request.sessionId);
   }
   if (request.action === "join") {
     JoinSession(request.sessionId);
