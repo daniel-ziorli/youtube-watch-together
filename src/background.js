@@ -115,7 +115,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     sendResponse({ sessionId });
   }
   if (request.action === "video-state") {
-    if (!globalTab.id || sender.tab.id !== globalTab.id) {
+    if (!globalTab || sender.tab.id !== globalTab.id) {
       return;
     }
     OnNewVideoState(request.state);
