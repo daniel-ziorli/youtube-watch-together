@@ -12,20 +12,22 @@ function GenerateId(length) {
 
 function join() {
   let id = document.getElementById("joinInput").value
+  let name = document.getElementById("nameInput").value
   if (id.length !== 32) {
     alert("Please enter a valid session ID");
     return;
   }
-  chrome.runtime.sendMessage({ "action": "join", sessionId: id });
+  chrome.runtime.sendMessage({ "action": "join", sessionId: id, username: name });
 }
 
 async function create() {
   let id = GenerateId(32);
+  let name = document.getElementById("nameInput").value
   const storage = await chrome.storage.sync.get({ "copyOnCreate": true });
   if (storage.copyOnCreate) {
     await navigator.clipboard.writeText(id);
   }
-  chrome.runtime.sendMessage({ "action": "create", sessionId: id });
+  chrome.runtime.sendMessage({ "action": "create", sessionId: id, username: name });
 }
 
 function leave() {
@@ -59,9 +61,14 @@ async function Start() {
     document.getElementById("session").classList.remove("hidden");
   }
 
-  const storage = await chrome.storage.sync.get({ "copyOnCreate": true });
-  if (storage.copyOnCreate) {
-    document.getElementById("copyCheckbox").checked = storage.copyOnCreate;
+  const copyOnCreateStorage = await chrome.storage.sync.get({ "copyOnCreate": true });
+  if (copyOnCreateStorage.copyOnCreate) {
+    document.getElementById("copyCheckbox").checked = copyOnCreateStorage.copyOnCreate;
+  }
+
+  const usernameStorage = await chrome.storage.sync.get({ "username": "" });
+  if (usernameStorage.username) {
+    document.getElementById("nameInput").value = usernameStorage.username;
   }
 }
 

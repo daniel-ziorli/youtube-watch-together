@@ -14,48 +14,67 @@ async function CreateTab() {
   return globalTab;
 }
 
-async function CreateSession(id) {
+async function CreateSession(id, username) {
   if (sessionId) {
     return;
   }
   console.log("Creating session");
 
-  JoinSession(id);
+  JoinSession(id, username);
 }
 
-async function JoinSession(id) {
-  console.log("Joining session");
+async function JoinSession(id, username) {
+  // console.log("Joining session");
 
   sessionId = id;
   await CreateTab();
 
   channel = supabase.channel(sessionId);
+  chrome.storage.sync.set({ "username": username });
 
   channel
     .on('broadcast', { event: 'state-update' }, (e) => {
-      console.log("Broadcast:" + JSON.stringify(e));
+      // console.log("Broadcast:" + JSON.stringify(e));
       OnStateUpdate(e.payload);
     })
-    .on('broadcast', { event: 'request-state' }, () => {
-      console.log("Request state");
-      const state = chrome.tabs.sendMessage(globalTab.id, {
-        "action": "get-state"
-      });
-      OnNewVideoState(state);
+    .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+      if (newPresences[0].username === username) {
+        return;
+      }
+      const message = newPresences[0].username + " joined";
+      chrome.notifications.create({
+        title: 'YouTube Watch Together',
+        message: message,
+        type: 'basic',
+        iconUrl: 'icons/icon_128.png',
+        silent: true
+      })
     })
-    .subscribe();
-
-  channel.send({
-    type: 'broadcast',
-    event: 'request-state',
-  })
+    .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+      if (newPresences[0].username === username) {
+        return;
+      }
+      const message = leftPresences[0].username + " left";
+      chrome.notifications.create({
+        title: 'YouTube Watch Together',
+        message: message,
+        type: 'basic',
+        iconUrl: 'icons/icon_128.png',
+        silent: true
+      })
+    })
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        channel.track({ username });
+      }
+    });
 }
 
 function LeaveSession() {
   if (!sessionId || !globalTab) {
     return;
   }
-  console.log("Leaving session");
+  // console.log("Leaving session");
   supabase.removeAllChannels()
   sessionId = undefined;
   globalTab = undefined;
@@ -69,7 +88,7 @@ async function OnNewVideoState(state) {
     return;
   }
 
-  console.log("OnNewVideoState:" + JSON.stringify(state));
+  // console.log("OnNewVideoState:" + JSON.stringify(state));
 
   lastUpdateAt = Date.now();
   state.updated_at = lastUpdateAt;
@@ -89,7 +108,7 @@ async function OnStateUpdate(state) {
     return;
   }
 
-  console.log("OnStateUpdate:" + JSON.stringify(state));
+  // console.log("OnStateUpdate:" + JSON.stringify(state));
 
   lastUpdateAt = state.updated_at;
 
@@ -103,10 +122,10 @@ async function OnStateUpdate(state) {
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "create") {
-    CreateSession(request.sessionId);
+    CreateSession(request.sessionId, request.username);
   }
   if (request.action === "join") {
-    JoinSession(request.sessionId);
+    JoinSession(request.sessionId, request.username);
   }
   if (request.action === "leave") {
     LeaveSession();
@@ -154,7 +173,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, currentTab)
       payload: {
         current_video: changeInfo.url,
         current_time: 0,
-        is_paused: true
+        is_paused: false
       }
     })
   }
