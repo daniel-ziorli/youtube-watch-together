@@ -51,7 +51,7 @@ async function JoinSession(id, username) {
       })
     })
     .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-      if (newPresences[0].username === username) {
+      if (leftPresences[0].username === username) {
         return;
       }
       const message = leftPresences[0].username + " left";
