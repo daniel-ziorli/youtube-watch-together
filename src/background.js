@@ -90,7 +90,7 @@ async function OnNewVideoState(state) {
 
   // console.log("OnNewVideoState:" + JSON.stringify(state));
 
-  lastUpdateAt = Date.now();
+  lastUpdateAt = await GetDateNow();
   state.updated_at = lastUpdateAt;
 
   channel.send(
@@ -178,3 +178,13 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, currentTab)
     })
   }
 });
+
+async function GetDateNow() {
+  try {
+    let response = await fetch('https://pnaucateowesxjdqlpeo.supabase.co/functions/v1/get-date-now');
+    let json = await response.json();
+    return json;
+  } catch (error) {
+    return Date.now();
+  }
+}
